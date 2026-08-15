@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Streamlit Dashboard",
+            "type": "python",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "app/dashboard.py"
+            ],
+            "env": {
+                "PYTHONIOENCODING": "utf-8"
+            },
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Run Qdrant Integration Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_qdrant.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Run Text Embeddings Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_text_embeddings.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Run Image Embeddings Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_image_embeddings.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
