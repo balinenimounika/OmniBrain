@@ -1,0 +1,42 @@
+Week 
+Reinforcement Learning (Ray RLlib, 
+PyTorch) 
+Simulation & Rendering (PettingZoo, 
+Three.js) 
+during training and decentralized actors 
+during inference. 
+extending from each drone, painting 
+the ground green as it is searched. 
+Week 4 
+Curriculum Learning: Progressively 
+increase the difficulty of the training 
+environment by introducing dynamic 
+obstacles and wind resistance. 
+Refine & Polish: Finalize the 
+dashboard. Add analytics charts 
+tracking the "Percentage of Map 
+Explored" and "Total Collisions" over 
+time. 
+Final 
+Review 
+A highly complex integration of distributed 
+Deep Learning and multi-agent systems. 
+A visually spectacular, interactive 
+physics and AI simulation. 
+Common Features Across All Projects 
+• 
+Distributed Computing Architectures: Moving beyond running models in a single Jupyter 
+Notebook. These projects utilize distributed frameworks like Ray, Flower, and LangGraph to 
+coordinate workloads across multiple agents, nodes, or CPU cores. 
+• 
+Advanced Neural Architectures: Utilizing the absolute forefront of model architectures, 
+including Vision-Language Models (VLMs), 3D U-Nets for medical imaging, and Multi-Agent 
+Actor-Critic networks. 
+• 
+Complex Data Privacy & Guardrails: Enterprise AI requires strict safety measures. These 
+projects implement NeMo Guardrails for LLMs, Homomorphic Encryption, and Differential 
+Privacy to ensure mathematical security. 
+• 
+Interactive Visualization: Complex AI outputs are useless if they cannot be interpreted. These 
+systems feature React and WebGL dashboards to render agent reasoning graphs, federated 
+training metrics, and 3D drone simulations.

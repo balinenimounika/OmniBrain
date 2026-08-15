@@ -1,0 +1,55 @@
+Week 
+PPML Engineering (PyTorch, Flower, 
+TenSEAL) 
+Distributed Systems (gRPC, React) 
+weights, wait for local training, and 
+aggregate the results (FedAvg). 
+traffic between the server and 
+nodes is secure. 
+Mid-
+Project 
+Review 
+Federated Audit: Prove the federated model 
+converges and approaches the accuracy of 
+the centralized baseline without ever 
+exposing raw data to the central server. 
+Node Resilience: Ensure the 
+training round survives if one of 
+the 3 hospital nodes drops offline 
+mid-epoch. 
+Week 3 
+Homomorphic Encryption: Integrate 
+TenSEAL. Encrypt the PyTorch tensors on the 
+client side before sending them to the 
+server, requiring the server to perform 
+mathematical aggregation on ciphertext. 
+Live Metrics: Stream the loss and 
+accuracy metrics from the central 
+aggregator to a WebSocket 
+endpoint. 
+Week 4 
+Differential Privacy: Add controlled 
+statistical noise to the weight updates before 
+transmission to mathematically guarantee 
+protection against model inversion attacks. 
+Refine & Polish: Build the React 
+dashboard to visualize the training 
+loss curve and the final MRI tumor 
+segmentation masks. 
+Final 
+Review 
+A masterclass in cryptography and 
+decentralized deep learning. 
+A compliant, privacy-first 
+healthcare AI architecture. 
+Project 3 - "SwarmRL": Multi-Agent Deep Reinforcement Learning Simulator 
+Domain: Autonomous Systems & Deep Reinforcement Learning 
+Problem Statement: Training a single agent to navigate an environment is well understood. However, 
+coordinating a swarm of 50 autonomous agents to search a disaster zone dynamically without 
+colliding—optimizing their coverage area collectively—is highly complex and fails with standard 
+pathfinding algorithms. 
+Use Case: A disaster response coordinator uses SwarmRL to deploy simulated search drones. The 
+backend uses Ray RLlib to run a Multi-Agent Proximal Policy Optimization (MAPPO) algorithm. The 
+agents learn to collaborate in a decentralized manner, sharing spatial rewards to maximize the search 
+area covered while heavily penalizing mid-air collisions. The React and WebGL dashboard renders the 
+trained swarm executing a flawless, emergent search pattern in a 3D environment.

@@ -1,0 +1,62 @@
+Week-wise Development Plan: 
+Week 
+AI Engineering (LangGraph, VLMs, Vector 
+DBs) 
+Full-Stack Integration (FastAPI, 
+Streamlit) 
+Week 1 
+Multi-Modal Ingestion: Build a pipeline to 
+parse PDFs, chunk text, and extract images. 
+Embed both modalities into a Qdrant vector 
+database. 
+API Scaffolding: Build a FastAPI 
+backend to handle asynchronous 
+document uploads and querying. 
+Week 2 
+Agentic Architecture: Implement the 
+LangGraph state machine. Define the 
+"Supervisor" node that evaluates a user's 
+query and routes it to the appropriate sub-
+agent. 
+Chat UI: Build a Streamlit interface 
+capable of rendering the agent's 
+"thought process" and displaying 
+referenced images alongside text. 
+Mid-
+Project 
+Review 
+Reasoning Audit: Prove the LangGraph 
+supervisor can correctly decide between 
+searching the vector database vs. executing 
+a SQL query based on the prompt. 
+Vision Check: Ensure the VLM 
+accurately extracts numerical data 
+from a bar chart image retrieved 
+from the database. 
+Week 3 
+Self-Correction Loop: Implement "Self-
+RAG." If an agent retrieves irrelevant data, 
+it must recognize the failure, rewrite its 
+own search query, and try again before 
+responding to the user [1.2.2]. 
+Guardrails: Integrate NeMo 
+Guardrails to strictly block the AI 
+from answering questions outside 
+the scope of the provided 
+documents. 
+Week 4 
+Evaluation Metrics: Integrate Langfuse to 
+track token usage, latency, and LLM 
+execution traces for observability [1.2.2]. 
+Refine & Polish: Finalize the UI, 
+adding citation links so users can 
+click an AI claim and instantly view 
+the exact PDF page and chart it 
+referenced. 
+Final 
+Review 
+A production-grade Agentic AI system 
+capable of complex, autonomous reasoning 
+over unstructured data. 
+A highly resilient, hallucination-
+resistant enterprise search tool.
