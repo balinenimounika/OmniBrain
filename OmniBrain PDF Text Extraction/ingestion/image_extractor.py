@@ -31,11 +31,8 @@ def extract_images(pdf_path, output_folder):
             image_bytes = image_data["image"]
             image_ext = image_data["ext"]
 
-            filename = (
-                f"page_{page_index + 1:03d}"
-                f"_img_{image_index:03d}."
-                f"{image_ext}"
-            )
+            image_id = f"image_{page_index + 1:03d}_{image_index:02d}"
+            filename = f"{image_id}.{image_ext}"
 
             output_path = os.path.join(
                 output_folder,
@@ -47,7 +44,7 @@ def extract_images(pdf_path, output_folder):
 
             extracted_images.append({
                 "page": page_index + 1,
-                "image_id": image_index,
+                "image_id": image_id,
                 "filename": filename,
                 "path": output_path
             })

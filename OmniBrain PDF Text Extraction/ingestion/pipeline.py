@@ -6,11 +6,14 @@ from image_extractor import extract_images
 import os
 import json
 
-PDF_PATH = "../data/input/sample.pdf"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
-TEXT_OUTPUT = "../data/output/text"
-CHUNKS_OUTPUT = "../data/output/chunks"
-IMAGES_OUTPUT = "../data/output/images"
+PDF_PATH = os.path.join(WORKSPACE_ROOT, "OmniBrain PDF Text Extraction", "data", "input", "sample.pdf")
+
+TEXT_OUTPUT = os.path.join(WORKSPACE_ROOT, "OmniBrain PDF Text Extraction", "data", "output", "text")
+CHUNKS_OUTPUT = os.path.join(WORKSPACE_ROOT, "OmniBrain PDF Text Extraction", "data", "output", "chunks")
+IMAGES_OUTPUT = os.path.join(WORKSPACE_ROOT, "data", "images")
 
 
 def main():
