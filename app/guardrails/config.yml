@@ -1,0 +1,25 @@
+models:
+  - type: main
+    engine: openai
+    model: gpt-3.5-turbo
+
+rails:
+  dialog:
+    single_call:
+      enabled: True
+      fallback_to_generate: True
+
+prompts:
+  - task: self_check_input
+    content: |
+      Your task is to determine if the user query is a general knowledge question, a coding request, a joke, casual conversation, or anything unrelated to a provided document context.
+      User question: "{{ user_input }}"
+      Answer 'yes' if it is a general knowledge/unrelated question that should be blocked, and 'no' if it sounds like a question about a document.
+
+  - task: self_check_hallucination
+    content: |
+      You are given a context and a user question.
+      Context: {{ context }}
+      Question: {{ user_input }}
+      Is it possible to answer the question based strictly on the context?
+      If the context is empty or does not contain enough information, answer 'no'. Otherwise, answer 'yes'.

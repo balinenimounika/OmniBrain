@@ -1,0 +1,29 @@
+define user ask general question
+  "What is the capital of France?"
+  "Tell me a joke"
+  "Write a Python program to sort a list"
+  "What is today's weather?"
+  "Who is the president?"
+  "How do I cook pasta?"
+
+define bot refuse to answer
+  "I can only answer questions based on the provided document."
+
+define bot insufficient context
+  "I could not find enough information about that in the provided document."
+
+define flow
+  user ask general question
+  bot refuse to answer
+
+define flow
+  user ...
+  $is_unrelated = execute check_unrelated(query=$user_message)
+  if $is_unrelated
+    bot refuse to answer
+    stop
+
+  $is_answerable = execute check_answerable(query=$user_message, context=$retrieved_context)
+  if not $is_answerable
+    bot insufficient context
+    stop
