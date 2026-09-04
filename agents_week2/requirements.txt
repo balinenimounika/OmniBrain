@@ -1,2 +1,4 @@
 PyMuPDF
 langgraph
+langchain-groq
+python-dotenv
