@@ -1,0 +1,38 @@
+[
+    {
+        "page": 1,
+        "image_id": 1,
+        "filename": "page_001_img_001.jpeg",
+        "path": "../data/output/images\\page_001_img_001.jpeg"
+    },
+    {
+        "page": 2,
+        "image_id": 1,
+        "filename": "page_002_img_001.jpeg",
+        "path": "../data/output/images\\page_002_img_001.jpeg"
+    },
+    {
+        "page": 3,
+        "image_id": 1,
+        "filename": "page_003_img_001.jpeg",
+        "path": "../data/output/images\\page_003_img_001.jpeg"
+    },
+    {
+        "page": 4,
+        "image_id": 1,
+        "filename": "page_004_img_001.jpeg",
+        "path": "../data/output/images\\page_004_img_001.jpeg"
+    },
+    {
+        "page": 5,
+        "image_id": 1,
+        "filename": "page_005_img_001.jpeg",
+        "path": "../data/output/images\\page_005_img_001.jpeg"
+    },
+    {
+        "page": 6,
+        "image_id": 1,
+        "filename": "page_006_img_001.jpeg",
+        "path": "../data/output/images\\page_006_img_001.jpeg"
+    }
+]

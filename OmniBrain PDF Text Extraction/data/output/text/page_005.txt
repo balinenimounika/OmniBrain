@@ -1,0 +1,57 @@
+Key Modules: 
+• 
+Multi-Agent Environment (PettingZoo / OpenAI Gym): A custom simulated continuous 3D 
+space where multiple agents interact, observe their surroundings, and receive localized rewards. 
+• 
+Reinforcement Learning Engine (Ray RLlib): A highly scalable distributed computing framework 
+utilized to train the MAPPO algorithms across multiple CPU cores. 
+• 
+Deep Neural Networks (PyTorch): The underlying actor-critic networks determining the 
+continuous flight paths of the drones based on LiDAR-like state observations. 
+• 
+3D Simulation UI (React & Three.js): A visualizer that ingests the live model inference 
+coordinates and renders the swarm's flight paths and sensor coverage in 3D. 
+Week-wise Development Plan: 
+Week 
+Reinforcement Learning (Ray RLlib, 
+PyTorch) 
+Simulation & Rendering (PettingZoo, 
+Three.js) 
+Week 1 
+Environment Physics: Build the custom 
+PettingZoo environment. Define the 
+continuous action spaces (velocity, pitch, 
+yaw) and observation spaces (distance to 
+nearest neighbors). 
+3D Scaffolding: Set up the React and 
+react-three-fiber canvas. Render a 
+basic 3D topographical map with 
+dummy spheres representing drones. 
+Week 2 
+Reward Engineering: Define the 
+mathematical reward function. Reward 
+agents for exploring unvisited coordinates 
+(+1) and heavily penalize them for colliding 
+with each other (-100). 
+State Broadcasting: Build a Python 
+WebSocket server that pushes the 
+exact X, Y, Z coordinates of all agents 
+in the environment every step. 
+Mid-
+Project 
+Review 
+Training Audit: Initiate training via Ray 
+RLlib. Prove that after 1,000 episodes, the 
+swarm learns to spread out rather than 
+bunching together or flying out of bounds. 
+Rendering Check: Connect the 
+WebSockets to Three.js and ensure 
+the 3D visualizer smoothly animates 
+the agents' movements. 
+Week 3 
+MAPPO Implementation: Upgrade from 
+independent learning algorithms to Multi-
+Agent PPO, utilizing a centralized critic 
+Sensor Visuals: Enhance the Three.js 
+rendering to show a semi-
+transparent "cone of vision"
