@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+import uuid
 from unittest.mock import MagicMock, patch
 
 # Add project root directory to python path
@@ -14,14 +15,18 @@ from app.retrieval.services import (
     map_text_hit,
     map_image_hit
 )
-from app.retrieval.langgraph_integration import retrieval_node, RetrievalState
+from app.retrieval.langgraph_integration import (
+    build_retrieval_graph,
+    retrieval_node,
+    RetrievalState,
+)
 from app.qdrant.client import get_qdrant_client
 from app.qdrant.collections import (
     create_omnibrain_collections,
     TEXT_COLLECTION,
     IMAGE_COLLECTION
 )
-from app.qdrant.insert import insert_text_vector, insert_image_vector
+from app.qdrant.insert import insert_text_vector, insert_image_vector, next_chunk_id, next_image_id
 from PIL import Image
 
 # Helper mock classes for Qdrant responses
@@ -101,6 +106,22 @@ class TestRetrievalUnit(unittest.TestCase):
         self.assertEqual(results[0].score, 0.85)
         self.assertEqual(results[0].image_id, "image_025_01")
         self.assertEqual(results[0].image_path, "data/images/sample.png")
+
+    @patch('app.retrieval.services.get_image_model')
+    def test_image_results_deduplicate_same_source_path(self, mock_get_model):
+        mock_model = MagicMock()
+        mock_model.encode.return_value = [0.1] * 512
+        mock_get_model.return_value = mock_model
+        self.mock_client.count.return_value.count = 2
+        self.mock_client.query_points.return_value = MockResponse([
+            MockPoint(1, 0.90, {"image_id": "image_1", "source_path": "data/images/same.jpg"}),
+            MockPoint(2, 0.80, {"image_id": "image_2", "source_path": "data/images/same.jpg"}),
+        ])
+
+        results = retrieve_images("sunflowers", top_k=3, client=self.mock_client)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].image_id, "image_1")
         
     @patch('app.retrieval.services.retrieve_images')
     @patch('app.retrieval.services.retrieve_text')
@@ -251,6 +272,65 @@ class TestRetrievalUnit(unittest.TestCase):
         results = retrieve_text("test", top_k=1, client=self.mock_client)
         self.assertEqual(results[0].score, 0.8877)
 
+    @patch('app.retrieval.langgraph_integration.retrieve_text')
+    def test_compiled_langgraph_runs_supervisor_and_retrieval(self, mock_retrieve_text):
+        mock_retrieve_text.return_value = [
+            RetrievalResult(
+                id=1, modality="text", score=0.9, document_name="doc.pdf",
+                page_number=1, chunk_id="c1", source_path="doc.pdf", content="revenue",
+            )
+        ]
+
+        graph = build_retrieval_graph(client=self.mock_client)
+        result = graph.invoke({"user_query": "revenue growth", "top_k": 1})
+
+        self.assertEqual(result["retrieval_mode"], "text")
+        self.assertEqual(result["retrieval_status"], "success")
+        self.assertEqual(result["retrieval_results"][0]["chunk_id"], "c1")
+
+    @patch('app.retrieval.services.search_text_similarity')
+    def test_low_cosine_matches_are_not_returned_as_evidence(self, mock_search):
+        mock_search.return_value = [{
+            "id": 1,
+            "score": 0.20,
+            "payload": {"document_name": "annual_report.pdf", "content": "Unrelated content"},
+        }]
+
+        results = retrieve_text("unrelated question", top_k=1, client=self.mock_client)
+
+        self.assertEqual(results, [])
+
+    @patch('app.retrieval.services.search_text_similarity')
+    def test_identical_source_content_is_returned_once(self, mock_search):
+        mock_search.return_value = [
+            {
+                "id": 1,
+                "score": 0.72,
+                "payload": {
+                    "document_name": "annual_report.pdf",
+                    "page_number": 25,
+                    "chunk_id": "chunk_025_03",
+                    "content": "Revenue growth was driven by improved sales performance.",
+                },
+            },
+            {
+                "id": 2,
+                "score": 0.68,
+                "payload": {
+                    "document_name": "annual_report.pdf",
+                    "page_number": 25,
+                    "chunk_id": "chunk_025_04",
+                    "content": "Revenue growth was driven by improved sales performance.",
+                },
+            },
+        ]
+
+        results = retrieve_text("revenue growth", top_k=3, client=self.mock_client)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].chunk_id, "chunk_025_03")
+        self.assertEqual(results[0].score, 0.72)
+
 
 class TestRetrievalRealIntegration(unittest.TestCase):
     """
@@ -297,11 +377,11 @@ class TestRetrievalRealIntegration(unittest.TestCase):
         
         insert_text_vector(
             client=self.client,
-            point_id=1,
+            point_id=str(uuid.uuid4()),
             vector=text_vector,
             document_name="annual_report.pdf",
             page_number=25,
-            chunk_id="chunk_025_01",
+            chunk_id=next_chunk_id(self.client, "annual_report.pdf", 25),
             source_path="data/documents/annual_report.pdf",
             text=text
         )
@@ -327,11 +407,11 @@ class TestRetrievalRealIntegration(unittest.TestCase):
         
         insert_image_vector(
             client=self.client,
-            point_id=101,
+            point_id=str(uuid.uuid4()),
             vector=img_vector,
             document_name="annual_report.pdf",
             page_number=25,
-            image_id="image_025_01",
+            image_id=next_image_id(self.client, "annual_report.pdf", 25),
             source_path=img_path
         )
         

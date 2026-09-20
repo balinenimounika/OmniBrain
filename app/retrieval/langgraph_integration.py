@@ -1,5 +1,6 @@
 import logging
 from typing import TypedDict, List, Dict, Any, Optional
+from langgraph.graph import END, START, StateGraph
 
 from app.retrieval.services import retrieve_text, retrieve_images, retrieve_multimodal
 from app.retrieval.models import RetrievalResult
@@ -17,6 +18,7 @@ class RetrievalState(TypedDict, total=False):
     query: str
     user_query: str
     route: str  # "text", "image", or "multimodal"
+    selected_route: str
     retrieval_mode: str  # "text", "image", or "multimodal"
     limit: Optional[int]
     top_k: Optional[int]
@@ -24,6 +26,8 @@ class RetrievalState(TypedDict, total=False):
     # Outputs
     retrieved_text: Optional[List[Dict[str, Any]]]
     retrieved_images: Optional[List[Dict[str, Any]]]
+    retrieved_text_results: Optional[List[Dict[str, Any]]]
+    retrieved_image_results: Optional[List[Dict[str, Any]]]
     retrieval_results: Optional[List[Dict[str, Any]]]
     retrieved_context: Optional[str]
     similarity_scores: Optional[List[float]]
@@ -32,11 +36,47 @@ class RetrievalState(TypedDict, total=False):
     chunk_id: Optional[List[str]]
     image_id: Optional[List[str]]
     source_path: Optional[List[str]]
-    retrieval_status: Optional[str]  # "success", "empty", or "error"
+    retrieval_status: Optional[str]  # "started", "success", "empty", "skipped", "error"
+    retrieval_skipped: Optional[bool]
     error_message: Optional[str]
+    
+    # Guardrail debug state
+    guardrail_allowed: Optional[bool]
+    guardrail_status: Optional[str]  # "ALLOWED" or "BLOCKED"
+    guardrail_score: Optional[float]
+    guardrail_message: Optional[str]
     
     # Context
     conversation_state: Optional[Dict[str, Any]]
+
+
+def supervisor_node(state: RetrievalState) -> Dict[str, Any]:
+    """Resolve the requested route before the retrieval node executes."""
+    from app.retrieval.router import route_query
+
+    query = state.get("user_query") or state.get("query", "")
+    requested_route = state.get("retrieval_mode") or state.get("route")
+    route = route_query(query, requested_route)
+    return {
+        "query": query,
+        "user_query": query,
+        "route": route,
+        "retrieval_mode": route,
+    }
+
+
+def build_retrieval_graph(client=None):
+    """Build a compiled Supervisor -> Retrieval LangGraph workflow."""
+    workflow = StateGraph(RetrievalState)
+    workflow.add_node("supervisor", supervisor_node)
+    workflow.add_node(
+        "retrieval",
+        lambda state: retrieval_node(state, client=client),
+    )
+    workflow.add_edge(START, "supervisor")
+    workflow.add_edge("supervisor", "retrieval")
+    workflow.add_edge("retrieval", END)
+    return workflow.compile()
 
 def serialize_result(res: RetrievalResult) -> Dict[str, Any]:
     """
@@ -81,11 +121,14 @@ def retrieval_node(state: RetrievalState, client=None) -> Dict[str, Any]:
         "query": query,
         "user_query": query,
         "route": route,
+        "selected_route": route,
         "retrieval_mode": route,
         "limit": limit,
         "top_k": limit,
         "retrieved_text": [],
         "retrieved_images": [],
+        "retrieved_text_results": [],
+        "retrieved_image_results": [],
         "retrieval_results": [],
         "retrieved_context": "",
         "similarity_scores": [],
@@ -95,6 +138,11 @@ def retrieval_node(state: RetrievalState, client=None) -> Dict[str, Any]:
         "image_id": [],
         "source_path": [],
         "retrieval_status": "empty",
+        "retrieval_skipped": False,
+        "guardrail_allowed": True,
+        "guardrail_status": "ALLOWED",
+        "guardrail_score": 0.0,
+        "guardrail_message": None,
         "error_message": ""
     }
     
@@ -145,17 +193,21 @@ def retrieval_node(state: RetrievalState, client=None) -> Dict[str, Any]:
         retrieved_context = "\n\n".join(context_blocks)
         
         status = "success" if results else "empty"
+        top_score = max(scores) if scores else 0.0
         logger.info(f"Retrieval Node completed. Status: {status}, Hits: {len(results)}")
         
         return {
             "query": query,
             "user_query": query,
             "route": route,
+            "selected_route": route,
             "retrieval_mode": route,
             "limit": limit,
             "top_k": limit,
             "retrieved_text": retrieved_text,
             "retrieved_images": retrieved_images,
+            "retrieved_text_results": retrieved_text,
+            "retrieved_image_results": retrieved_images,
             "retrieval_results": serialized,
             "retrieved_context": retrieved_context,
             "similarity_scores": scores,
@@ -165,6 +217,11 @@ def retrieval_node(state: RetrievalState, client=None) -> Dict[str, Any]:
             "image_id": image_ids,
             "source_path": source_paths,
             "retrieval_status": status,
+            "retrieval_skipped": False,
+            "guardrail_allowed": True,
+            "guardrail_status": "ALLOWED",
+            "guardrail_score": round(float(top_score), 4),
+            "guardrail_message": None,
             "error_message": ""
         }
         

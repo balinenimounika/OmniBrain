@@ -1,5 +1,6 @@
 import sys
 import os
+import uuid
 from PIL import Image
 
 # Add project root directory to python path
@@ -11,10 +12,77 @@ from app.qdrant.collections import (
     TEXT_COLLECTION,
     IMAGE_COLLECTION
 )
-from app.qdrant.insert import insert_text_vector, insert_image_vector
+from app.qdrant.insert import insert_text_vector, insert_image_vector, next_chunk_id, next_image_id
 from app.qdrant.search import search_text_similarity, search_image_similarity
 from app.embeddings.text_embeddings import generate_text_embedding
 from app.embeddings.image_embeddings import generate_image_embedding
+
+
+def test_insert_text_vector_replaces_existing_same_chunk_id():
+    client = get_qdrant_client()
+    try:
+        client.delete_collection(TEXT_COLLECTION)
+    except Exception:
+        pass
+    create_omnibrain_collections(client)
+
+    insert_text_vector(
+        client=client,
+        point_id=None,
+        vector=[0.1] * 384,
+        document_name="annual_report.pdf",
+        page_number=25,
+        chunk_id="chunk_025_01",
+        source_path="data/documents/annual_report.pdf",
+        text="Original version",
+    )
+    insert_text_vector(
+        client=client,
+        point_id=None,
+        vector=[0.9] * 384,
+        document_name="annual_report.pdf",
+        page_number=25,
+        chunk_id="chunk_025_01",
+        source_path="data/documents/annual_report.pdf",
+        text="Updated version",
+    )
+
+    points, _ = client.scroll(collection_name=TEXT_COLLECTION, limit=50)
+    matches = [point.payload for point in points if point.payload and point.payload.get("chunk_id") == "chunk_025_01"]
+    assert len(matches) == 1
+
+
+def test_insert_image_vector_replaces_existing_same_image_id():
+    client = get_qdrant_client()
+    try:
+        client.delete_collection(IMAGE_COLLECTION)
+    except Exception:
+        pass
+    create_omnibrain_collections(client)
+
+    insert_image_vector(
+        client=client,
+        point_id=None,
+        vector=[0.1] * 512,
+        document_name="annual_report.pdf",
+        page_number=25,
+        image_id="image_025_01",
+        source_path="data/images/duplicate_a.png",
+    )
+    insert_image_vector(
+        client=client,
+        point_id=None,
+        vector=[0.9] * 512,
+        document_name="annual_report.pdf",
+        page_number=25,
+        image_id="image_025_01",
+        source_path="data/images/duplicate_a.png",
+    )
+
+    points, _ = client.scroll(collection_name=IMAGE_COLLECTION, limit=50)
+    matches = [point.payload for point in points if point.payload and point.payload.get("image_id") == "image_025_01"]
+    assert len(matches) == 1
+
 
 def generate_mock_images():
     """
@@ -69,21 +137,21 @@ def main():
         
         # Define some sample document text chunks with valid integer IDs for Qdrant
         texts = [
-            ("Revenue increased significantly during 2025.", 1, "chunk_01"),
-            ("Our company expanded its retail presence in North America.", 2, "chunk_02"),
-            ("Artificial Intelligence research and development costs grew by 15%.", 3, "chunk_03")
+            ("Revenue increased significantly during 2025.", 25),
+            ("Our company expanded its retail presence in North America.", 25),
+            ("Artificial Intelligence research and development costs grew by 15%.", 26)
         ]
         
-        for text, int_id, chunk_id in texts:
+        for text, page_number in texts:
             # Generate the 384-dimensional SentenceTransformer vector
             vector = generate_text_embedding(text)
             insert_text_vector(
                 client=client,
-                point_id=int_id, # Must be a 64-bit integer or valid UUID string
+                point_id=str(uuid.uuid4()),
                 vector=vector,
                 document_name="annual_report.pdf",
-                page_number=25,
-                chunk_id=chunk_id,
+                page_number=page_number,
+                chunk_id=next_chunk_id(client, "annual_report.pdf", page_number),
                 source_path="data/documents/annual_report.pdf",
                 text=text
             )
@@ -96,11 +164,11 @@ def main():
         vector_green = generate_image_embedding(img_green_path)
         insert_image_vector(
             client=client,
-            point_id=101, # Valid integer ID
+            point_id=str(uuid.uuid4()),
             vector=vector_green,
             document_name="annual_report.pdf",
             page_number=25,
-            image_id="image_025_01",
+            image_id=next_image_id(client, "annual_report.pdf", 25),
             source_path=img_green_path
         )
         
@@ -108,11 +176,11 @@ def main():
         vector_red = generate_image_embedding(img_red_path)
         insert_image_vector(
             client=client,
-            point_id=102, # Valid integer ID
+            point_id=str(uuid.uuid4()),
             vector=vector_red,
             document_name="annual_report.pdf",
             page_number=25,
-            image_id="image_025_02",
+            image_id=next_image_id(client, "annual_report.pdf", 25),
             source_path=img_red_path
         )
         

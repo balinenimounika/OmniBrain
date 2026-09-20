@@ -10,6 +10,12 @@ from app.qdrant.collections import TEXT_COLLECTION, IMAGE_COLLECTION
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Qdrant collections use cosine similarity. A score below each modality's floor
+# is treated as a nearest-neighbor fallback rather than usable evidence. The
+# image floor is calibrated from the CLIP text-to-image score for a valid sample.
+MIN_TEXT_COSINE_SCORE = float(os.getenv("OMNIBRAIN_MIN_TEXT_COSINE_SCORE", "0.35"))
+MIN_IMAGE_COSINE_SCORE = float(os.getenv("OMNIBRAIN_MIN_IMAGE_COSINE_SCORE", "0.25"))
+
 def _normalized_source_path(source_path):
     if not isinstance(source_path, str) or not source_path.strip():
         return None
@@ -17,13 +23,14 @@ def _normalized_source_path(source_path):
 
 def _image_result_key(result: Dict[str, Any]):
     payload = result.get("payload") or {}
-    image_id = payload.get("image_id")
-    if image_id:
-        return ("image_id", image_id)
     source_path = _normalized_source_path(payload.get("source_path"))
     if source_path:
         return ("source_path", source_path)
+    image_id = payload.get("image_id")
+    if image_id:
+        return ("image_id", str(image_id))
     return ("point_id", result.get("id"))
+
 
 def _deduplicate_image_results(results: List[Dict[str, Any]], top_k: int):
     unique_results = {}
@@ -45,8 +52,7 @@ def _deduplicate_text_results(results: List[Dict[str, Any]], top_k: int):
         key = (
             payload.get("document_name"),
             payload.get("page_number"),
-            payload.get("chunk_id"),
-            payload.get("text", payload.get("content"))
+            payload.get("content", payload.get("text"))
         )
         current = unique_results.get(key)
         if current is None or result.get("score", 0.0) > current.get("score", 0.0):
@@ -56,6 +62,18 @@ def _deduplicate_text_results(results: List[Dict[str, Any]], top_k: int):
         key=lambda result: result.get("score", 0.0),
         reverse=True
     )[:top_k]
+
+
+def is_relevant_score(score: float, modality: str = "text") -> bool:
+    minimum = MIN_IMAGE_COSINE_SCORE if modality == "image" else MIN_TEXT_COSINE_SCORE
+    return float(score or 0.0) >= minimum
+
+
+def _filter_relevant_results(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [
+        result for result in results
+        if is_relevant_score(result.get("score", 0.0), "text")
+    ]
 
 def search_text_similarity(
     client: QdrantClient,
@@ -104,7 +122,7 @@ def search_text_similarity(
                 "payload": hit.payload
             })
             
-        results = _deduplicate_text_results(results, top_k)
+        results = _filter_relevant_results(_deduplicate_text_results(results, top_k))
         logger.info(f"Text search complete. Retrieved {len(results)} unique hits.")
         return results
         
@@ -160,7 +178,10 @@ def search_image_similarity(
                 "payload": hit.payload
             })
             
-        results = _deduplicate_image_results(results, top_k)
+        results = [
+            result for result in _deduplicate_image_results(results, top_k)
+            if is_relevant_score(result.get("score", 0.0), "image")
+        ]
         logger.info(f"Image search complete. Retrieved {len(results)} unique hits.")
         return results
         

@@ -1,5 +1,6 @@
 import os
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 
@@ -12,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Global client instance cache to ensure singleton access outside Streamlit (e.g. tests or FastAPI)
 _CLIENT_INSTANCE = None
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOCAL_QDRANT_PATH = PROJECT_ROOT / "data" / "qdrant_db"
 
 try:
     import streamlit as st
@@ -19,67 +22,42 @@ try:
 except ImportError:
     is_streamlit = False
 
+def _create_qdrant_client() -> QdrantClient:
+    url = os.getenv("QDRANT_URL", "").strip()
+    api_key = os.getenv("QDRANT_API_KEY", "").strip()
+
+    if not url:
+        try:
+            logger.info("Checking if Qdrant server is active on http://localhost:6333...")
+            server_client = QdrantClient(host="localhost", port=6333, timeout=1.0)
+            server_client.get_collections()
+            logger.info("Connected to shared Qdrant server at localhost:6333")
+            return server_client
+        except Exception:
+            pass
+
+    if url:
+        logger.info("Connecting to Qdrant instance at url: '%s'", url)
+        return QdrantClient(url=url, api_key=api_key) if api_key else QdrantClient(url=url)
+
+    LOCAL_QDRANT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger.info("Using local Qdrant storage at '%s'", LOCAL_QDRANT_PATH)
+    return QdrantClient(path=str(LOCAL_QDRANT_PATH))
+
+
+def _get_process_client() -> QdrantClient:
+    global _CLIENT_INSTANCE
+    if _CLIENT_INSTANCE is None:
+        _CLIENT_INSTANCE = _create_qdrant_client()
+    return _CLIENT_INSTANCE
+
+
 if is_streamlit:
-    @st.cache_resource
+    @st.cache_resource(show_spinner=False)
     def get_qdrant_client() -> QdrantClient:
-        """
-        Initializes and returns a cached QdrantClient instance (singleton) for Streamlit.
-        Utilizes st.cache_resource to prevent concurrent database lock collisions.
-        """
-        url = os.getenv("QDRANT_URL", "").strip()
-        api_key = os.getenv("QDRANT_API_KEY", "").strip()
-        
-        # Check if local Qdrant server is running on localhost:6333
-        if not url:
-            try:
-                logger.info("Checking if Qdrant server is active on http://localhost:6333...")
-                test_client = QdrantClient(host="localhost", port=6333, timeout=1.0)
-                test_client.get_collections()
-                logger.info("Successfully connected to shared Qdrant server at localhost:6333")
-                return test_client
-            except Exception:
-                pass
-                
-        if url:
-            logger.info(f"Connecting to Qdrant instance at url: '{url}'")
-            if api_key:
-                return QdrantClient(url=url, api_key=api_key)
-            return QdrantClient(url=url)
-        else:
-            local_dir = os.path.join("data", "qdrant_db")
-            logger.info(f"Using cached local disk storage at: '{local_dir}'")
-            os.makedirs(os.path.dirname(local_dir), exist_ok=True)
-            return QdrantClient(path=local_dir)
+        """Return the one cached Qdrant client for the Streamlit process."""
+        return _create_qdrant_client()
 else:
     def get_qdrant_client() -> QdrantClient:
-        """
-        Initializes and returns a cached QdrantClient instance (singleton) outside Streamlit.
-        """
-        global _CLIENT_INSTANCE
-        if _CLIENT_INSTANCE is not None:
-            return _CLIENT_INSTANCE
-            
-        url = os.getenv("QDRANT_URL", "").strip()
-        api_key = os.getenv("QDRANT_API_KEY", "").strip()
-        
-        # Check if local Qdrant server is running on localhost:6333
-        if not url:
-            try:
-                test_client = QdrantClient(host="localhost", port=6333, timeout=1.0)
-                test_client.get_collections()
-                _CLIENT_INSTANCE = test_client
-                return _CLIENT_INSTANCE
-            except Exception:
-                pass
-                
-        if url:
-            if api_key:
-                _CLIENT_INSTANCE = QdrantClient(url=url, api_key=api_key)
-            else:
-                _CLIENT_INSTANCE = QdrantClient(url=url)
-        else:
-            local_dir = os.path.join("data", "qdrant_db")
-            os.makedirs(os.path.dirname(local_dir), exist_ok=True)
-            _CLIENT_INSTANCE = QdrantClient(path=local_dir)
-            
-        return _CLIENT_INSTANCE
+        """Return the one process-wide Qdrant client outside Streamlit."""
+        return _get_process_client()

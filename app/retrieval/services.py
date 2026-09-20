@@ -8,6 +8,8 @@ from app.qdrant.client import get_qdrant_client
 from app.qdrant.collections import TEXT_COLLECTION, IMAGE_COLLECTION
 from app.qdrant.search import (
     _deduplicate_image_results,
+    _deduplicate_text_results,
+    is_relevant_score,
     search_text_similarity,
     search_image_similarity,
 )
@@ -77,7 +79,7 @@ def map_text_hit(
         chunk_id=payload.get("chunk_id"),
         image_id=image_id if image_id is not None else payload.get("image_id"),
         source_path=payload.get("source_path", "Unknown"),
-        content=payload.get("text", ""),
+        content=payload.get("content", payload.get("text", "")),
         image_path=image_path
     )
 
@@ -124,7 +126,9 @@ def retrieve_text(query: str, top_k: int = 3, client: Optional[QdrantClient] = N
         raw_results = search_text_similarity(client, query, top_k=top_k)
         
         results = []
-        for item in raw_results:
+        for item in _deduplicate_text_results(raw_results, top_k):
+            if not is_relevant_score(item.get("score", 0.0)):
+                continue
             payload = item["payload"].copy() if item.get("payload") else {}
             image_id, image_path = find_image_metadata(client, payload.get("image_id"))
             results.append(map_text_hit(
@@ -168,6 +172,8 @@ def retrieve_images(query: str, top_k: int = 3, client: Optional[QdrantClient] =
             raw_results = search_image_similarity(client, query, top_k=top_k)
             results = []
             for item in raw_results:
+                if not is_relevant_score(item.get("score", 0.0), "image"):
+                    continue
                 results.append(map_image_hit(item["id"], item["score"], item["payload"]))
             return results
         else:
@@ -201,6 +207,7 @@ def retrieve_images(query: str, top_k: int = 3, client: Optional[QdrantClient] =
             return [
                 map_image_hit(item["id"], item["score"], item["payload"])
                 for item in unique_results
+                if is_relevant_score(item.get("score", 0.0), "image")
             ]
     except Exception as e:
         logger.error(f"Error in retrieve_images: {e}")

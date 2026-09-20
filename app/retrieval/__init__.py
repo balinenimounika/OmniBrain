@@ -8,3 +8,4 @@ from app.retrieval.langgraph_integration import (
     RetrievalState,
     retrieval_node
 )
+from app.retrieval.router import route_query

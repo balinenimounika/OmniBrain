@@ -59,11 +59,11 @@ def text_key(point):
 
 def image_key(point):
     payload = point.payload or {}
-    if payload.get("image_id"):
-        return ("image_id", payload["image_id"])
     source_path = normalized_source_path(payload.get("source_path"))
     if source_path:
         return ("source_path", source_path)
+    if payload.get("image_id"):
+        return ("image_id", payload["image_id"])
     return ("point_id", point.id)
 
 
