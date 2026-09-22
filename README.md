@@ -31,6 +31,7 @@ ingestion/       PDF parsing, chunking, and image extraction
 data/            Sample PDF and generated outputs
 frontend/        React + Vite client
 tests/           Automated API-key-free regression tests
+scripts/         Manual smoke-test and demo scripts
 docs/            Architecture, testing guide, and results
 ```
 
@@ -87,6 +88,8 @@ npm run build
 ```
 
 The complete test plan, manual scenarios, and current results are in [docs/TESTING.md](docs/TESTING.md) and [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md).
+
+Manual demo scripts are kept separately from automated tests. For example, after configuring the database, run `python -m scripts.run_sql` from the repository root.
 
 ## Team contributions
 
