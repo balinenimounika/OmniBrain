@@ -88,6 +88,19 @@ npm run build
 
 The complete test plan, manual scenarios, and current results are in [docs/TESTING.md](docs/TESTING.md) and [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md).
 
+## Team contributions
+
+The project was delivered as a four-week team effort:
+
+| Team member | Primary contribution |
+| --- | --- |
+| Mounika | Self-RAG completion: relevance checking and query rewrite/retry behavior |
+| Sudheer | NeMo Guardrails work and out-of-scope query handling |
+| Kundan | **Week 4 project handoff:** documentation, README, test results, automated regression checks, and repository organization |
+| Mehaboob | Final Streamlit/FastAPI integration, end-to-end testing, and demo preparation |
+
+Kundan's Week 4 handoff is recorded in Git commit [`11cef18`](https://github.com/balinenimounika/OmniBrain/commit/11cef18232b962227d8fabf22bedc56d5bc9a3ed), authored by **Kundan Pandey**. An earlier end-to-end testing contribution is also preserved in the repository history.
+
 ## Security and limitations
 
 Never commit `.env`, API keys, virtual environments, build output, or local databases. The SQL agent uses example SQLite records, and the vision agent currently returns metadata for an extracted image; both are designed as extension points.
