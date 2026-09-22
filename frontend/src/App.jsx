@@ -25,6 +25,25 @@ const EXAMPLE_QUERIES = [
   }
 ];
 
+function renderAnswerText(text) {
+  return String(text).split('\n').map((line, lineIndex) => {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+
+    return (
+      <React.Fragment key={lineIndex}>
+        {parts.map((part, partIndex) =>
+          part.startsWith('**') && part.endsWith('**') ? (
+            <strong key={partIndex}>{part.slice(2, -2)}</strong>
+          ) : (
+            part
+          )
+        )}
+        {lineIndex < String(text).split('\n').length - 1 && <br />}
+      </React.Fragment>
+    );
+  });
+}
+
 // Subcomponent: Collapsible Source Citation Item
 function SourceItem({ source }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -560,7 +579,7 @@ export default function App() {
                       </div>
 
                       {/* Main Agent Answer */}
-                      <div className="message-content ai-text">{msg.text}</div>
+                      <div className="message-content ai-text">{renderAnswerText(msg.text)}</div>
 
                       {/* FEATURE 1: Retrieved Vision Image */}
                       {isVisionAgent && (msg.image_file || msg.image_url) && (
