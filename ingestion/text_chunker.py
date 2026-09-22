@@ -23,6 +23,11 @@ def chunk_text(text, chunk_size=1000, overlap=200):
         if chunk.strip():
             chunks.append(chunk.strip())
 
+        # The final full chunk already contains the remaining text.  Advancing
+        # again would create a redundant suffix made only of overlap content.
+        if end >= len(text):
+            break
+
         start += chunk_size - overlap
 
     return chunks

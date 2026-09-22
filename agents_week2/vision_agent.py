@@ -2,7 +2,8 @@ import os
 from PIL import Image
 
 
-IMAGE_DIR = r"C:\Users\Lenovo\Documents\OmniBrain\data\output\images"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+IMAGE_DIR = os.path.join(PROJECT_ROOT, "data", "output", "images")
 
 
 def vision_agent(state):
