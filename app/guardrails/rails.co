@@ -1,0 +1,10 @@
+define user ask general question
+  "What is the capital of France?"
+  "Tell me a joke"
+
+define bot refuse to answer
+  "I can only answer questions based on the provided document."
+
+define flow
+  user ask general question
+  bot refuse to answer
